@@ -59,6 +59,7 @@ button {
 }
 
 .number, .decimal {
+    color: black;
     background: #ddd;
 }
 
