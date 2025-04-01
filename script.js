@@ -1,68 +1,87 @@
-const display = document.querySelector('.display');
-const buttons = document.querySelectorAll('button');
-let resultDisplayed = false;
+document.addEventListener('DOMContentLoaded', () => {
+    const display = document.querySelector('.display');
+    const buttons = document.querySelector('.buttons');
+    let evaluated = false;
 
-display.setAttribute("autocomplete", "off");
+    buttons.addEventListener('click', (event) => {
+        const target = event.target;
 
-window.onload = () => {
-    display.focus();
-};
+        if (!target.matches('button')) return;
 
-display.addEventListener("input", (e) => {
-    display.value = display.value.replace(/[^0-9+\-*/().÷×%=]/g, '');
-});
+        if (display.value.startsWith('Still Error')) {
+            if (target.textContent !== '=') {
+                display.value = '';
+            } else {
+                display.value += '.';
+                return;
+            }
+        } else if (display.value === 'Error') {
+            display.value = 'Still Error';
+            return;
+        }
 
-buttons.forEach(button => {
-    button.addEventListener('click', () => {
-        handleButtonClick(button.innerText);
+        if (evaluated && (target.classList.contains('number') || target.classList.contains('decimal'))) {
+            display.value = '';
+            evaluated = false;
+        } else if (evaluated && target.classList.contains('operator')) {
+            evaluated = false;
+        }
+
+        if (target.classList.contains('number') || target.classList.contains('decimal')) {
+            display.value += target.textContent;
+        } else if (target.classList.contains('operator')) {
+            const operator = target.textContent;
+            if (operator === '=') {
+                evaluateExpression();
+            } else if (operator === '÷') {
+                display.value += '/';
+            } else if (operator === '×') {
+                display.value += '*';
+            } else {
+                display.value += operator;
+            }
+        } else if (target.classList.contains('clear')) {
+            display.value = '';
+        } else if (target.classList.contains('plus-minus')) {
+            toggleSign();
+        } else if (target.classList.contains('percent')) {
+            percentage();
+        }
     });
-});
 
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        handleButtonClick('=');
-    }
-});
+    display.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            evaluateExpression();
+        } else if (display.value.startsWith('Still Error')) {
+            display.value = '';
+        }
+    });
 
-function handleButtonClick(value) {
-    if (resultDisplayed) {
-        display.value = '';
-        resultDisplayed = false;
-    }
-
-    if (value === 'C') {
-        display.value = '';
-    } else if (value === '=') {
+    function evaluateExpression() {
         try {
-            let expression = display.value.replace(/×/g, '*').replace(/÷/g, '/');
-            let result = eval(expression);
-            display.value += `=${result}`;
-            resultDisplayed = true;
+            const result = eval(display.value);
+            display.value = result;
+            evaluated = true;
         } catch {
             display.value = 'Error';
-            resultDisplayed = true;
+            evaluated = true;
         }
-    } else if (value === '+/-') {
-        let expression = display.value.trim();
-        let match = expression.match(/([-]?\d+(\.\d+)?)(?!.*\d)/);
-
-        if (match) {
-            let number = match[0];
-            let toggledNumber = number.startsWith('-') ? number.substring(1) : '-' + number;
-            display.value = expression.slice(0, match.index) + toggledNumber;
-        }
-    } else if (value === '%') {
-        let expression = display.value.trim();
-        let match = expression.match(/(\d+(\.\d+)?)(?!.*\d)/);
-
-        if (match) {
-            let number = parseFloat(match[0]);
-            let percentValue = number / 100;
-            display.value = expression.slice(0, match.index) + percentValue;
-        }
-    } else {
-        display.value += value;
     }
 
-    display.scrollLeft = display.scrollWidth;
-}
+    function toggleSign() {
+        if (display.value.charAt(0) === '-') {
+            display.value = display.value.slice(1);
+        } else {
+            display.value = '-' + display.value;
+        }
+    }
+
+    function percentage() {
+        try {
+            display.value = eval(display.value) / 100;
+        } catch {
+            display.value = 'Error';
+        }
+    }
+});
